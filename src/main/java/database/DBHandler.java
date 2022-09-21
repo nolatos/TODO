@@ -11,6 +11,7 @@ import com.google.firebase.cloud.FirestoreClient;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,13 +46,15 @@ public class DBHandler {
         }
     }
 
-    public void writeToData(String toWrite) {
-        DocumentReference docRef = db.collection("users").document("alovelace");
+    /**
+     * Writes to the DB
+     * @param data the data we want to store, as a map.
+     * @param collectionName the type of the data (e.g. cities).
+     * @param documentName the data name (e.g. LA).
+     */
+    public void writeToData(Map<String, Object> data, String collectionName, String documentName) {
+        DocumentReference docRef = db.collection(collectionName).document(documentName);
         // Add document data  with id "alovelace" using a hashmap
-        Map<String, Object> data = new HashMap<>();
-        data.put("first", "Ada");
-        data.put("last", "Lovelace");
-        data.put("born", 1815);
         //asynchronously write data
         ApiFuture<WriteResult> result = docRef.set(data);
         // ...
@@ -66,28 +69,50 @@ public class DBHandler {
         }
     }
 
-    public void readData() {
-        // asynchronously retrieve all users
-        ApiFuture<QuerySnapshot> query = db.collection("users").get();
-// ...
-// query.get() blocks on response
-        QuerySnapshot querySnapshot = null;
+    /**
+     * Given a collection name, returns all the data in said collection name.
+     * @param collectionName
+     * @return A List of Maps each representing a document in the collection. The list will be empty if no such collection exists.
+     */
+    public List<Map<String, Object>> getAllDocuments(String collectionName) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        // asynchronously retrieve all documents
+        ApiFuture<QuerySnapshot> future = db.collection(collectionName).get();
+// future.get() blocks on response
+        List<QueryDocumentSnapshot> documents = null;
         try {
-            querySnapshot = query.get();
+            documents = future.get().getDocuments();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
-        List<QueryDocumentSnapshot> documents = querySnapshot.getDocuments();
         for (QueryDocumentSnapshot document : documents) {
-            System.out.println("User: " + document.getId());
-            System.out.println("First: " + document.getString("first"));
-            if (document.contains("middle")) {
-                System.out.println("Middle: " + document.getString("middle"));
-            }
-            System.out.println("Last: " + document.getString("last"));
-            System.out.println("Born: " + document.getLong("born"));
+            result.add(document.getData());
         }
+        return result;
+
+        // asynchronously retrieve all users
+//        ApiFuture<QuerySnapshot> query = db.collection("users").get();
+//// ...
+//// query.get() blocks on response
+//        QuerySnapshot querySnapshot = null;
+//        try {
+//            querySnapshot = query.get();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        } catch (ExecutionException e) {
+//            e.printStackTrace();
+//        }
+//        List<QueryDocumentSnapshot> documents = querySnapshot.getDocuments();
+//        for (QueryDocumentSnapshot document : documents) {
+//            System.out.println("User: " + document.getId());
+//            System.out.println("First: " + document.getString("first"));
+//            if (document.contains("middle")) {
+//                System.out.println("Middle: " + document.getString("middle"));
+//            }
+//            System.out.println("Last: " + document.getString("last"));
+//            System.out.println("Born: " + document.getLong("born"));
+//        }
     }
 }
